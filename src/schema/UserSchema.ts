@@ -125,8 +125,8 @@ export class CheckUserEmailAvailabeInput {
 @Directive(`@key(fields:"_id")`)
 @ObjectType()
 export class User {
-  @Field(type => String)
-  _id: string;
+  @Field(type => ID, { nullable: false })
+  _id: mongoose.Types.ObjectId;
 
   @Field(type => String, { nullable: true })
   username: string;
