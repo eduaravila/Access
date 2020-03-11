@@ -27,6 +27,18 @@ export class SuccessResponse {
   code?: string;
 }
 
+@ObjectType()
+export class AccessInfo {
+  @Field(type => String)
+  token?: string;
+
+  @Field(type => String)
+  media?: string;
+
+  @Field(type => String)
+  code?: string;
+}
+
 @InputType()
 export class verifyAccountInput {
   @Field(type => String)

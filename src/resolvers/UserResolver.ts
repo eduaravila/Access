@@ -19,7 +19,8 @@ import {
   LoginInfo,
   resendCodeInfo,
   restorePasswordCodeInput,
-  CheckUserEmailAvailabeInput
+  CheckUserEmailAvailabeInput,
+  AccessInfo
 } from "../schema/UserSchema";
 
 @Resolver()
@@ -91,7 +92,6 @@ export class RegisterResolver {
 
   @Query(returns => SuccessResponse)
   async ImageToken(@Ctx() ctx: any) {
-  
     let msg = await imageToken(ctx);
     return {
       msg,
@@ -136,16 +136,12 @@ export class RegisterResolver {
     };
   }
 
-  @Query(returns => SuccessResponse)
+  @Query(returns => AccessInfo)
   async Login(
     @Arg("accessInfo", () => LoginInfo)
     accessInfo: LoginInfo,
     @Ctx() ctx: any
   ) {
-    let msg = await login(accessInfo, ctx);
-    return {
-      msg,
-      code: "200"
-    };
+    return await login(accessInfo, ctx);
   }
 }

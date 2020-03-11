@@ -129,13 +129,21 @@ export const login = async ({ user, password }: loginType, { body }: any) => {
     });
 
     let token = new Jwt({ userId: userId._id.toString() });
+    let tokenMedia = new JwtMedia({ userId: userId._id.toString() });
+
+    await tokenMedia.create_token("21d");
 
     await token.create_token(
       "21d",
       body.variables.keyid,
       body.variables.privateKey
     );
-    return Promise.resolve(token.token);
+    return Promise.resolve({
+      token: token.token,
+      media: tokenMedia.token,
+      code: "200"
+    });
+    
   } catch (error) {
     throw new ApolloError(error);
   }
