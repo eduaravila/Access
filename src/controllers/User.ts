@@ -4,6 +4,9 @@ import {
   ApolloError,
   AuthenticationError
 } from "apollo-server-express";
+import { OAuth2Client } from "google-auth-library";
+import graph from "fbgraph";
+
 import {
   registerType,
   varifyAccountType,
@@ -16,6 +19,7 @@ import Jwt from "../utils/jwt";
 import JwtMedia from "../utils/jwtMedia";
 import { verification_email, password_reset_mail } from "../utils/mailer";
 import pre_user_model from "../models/User/PreUser";
+import { async } from "q";
 
 export const register = async (
   { username, password, email }: registerType,
@@ -63,6 +67,7 @@ export const register = async (
   }
 };
 
+// ? adds the user to the definitive user table
 export const verifyAccount = async (
   { code, token }: varifyAccountType,
   context: any
@@ -124,8 +129,13 @@ export const resendVerifyCode = async (username: string, context: any) => {
 
 export const login = async ({ user, password }: loginType, { body }: any) => {
   try {
+    if (!(await userModel.checkPassword(user, password))) {
+      throw Error("invalid password");
+    }
+
     let userId = await userModel.findOne({
-      $or: [{ username: user }, { email: user }]
+      $or: [{ username: user }, { email: user }],
+      $and: [{ external_service: "local" }]
     });
 
     let token = new Jwt({ userId: userId._id.toString() });
@@ -143,8 +153,118 @@ export const login = async ({ user, password }: loginType, { body }: any) => {
       media: tokenMedia.token,
       code: "200"
     });
-    
   } catch (error) {
+    throw new ApolloError(error);
+  }
+};
+
+export const verifyGoogleToken = async (token: string, context: any) => {
+  try {
+    let {
+      country = " ",
+      region = "",
+      city = "",
+      timezone = "",
+      ll = []
+    } = context.ipInfo;
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+
+    console.log(payload.email);
+    let userId = await userModel.findOneOrCreate(payload.email, {
+      username: payload.name,
+      location: {
+        city,
+        country,
+        ll,
+        region,
+        timezone
+      },
+      external_service: "google"
+    });
+
+    let tokenInfo = new Jwt({ userId: userId._id.toString() });
+    let tokenMedia = new JwtMedia({ userId: userId._id.toString() });
+
+    await tokenMedia.create_token("21d");
+
+    await tokenInfo.create_token(
+      "21d",
+      context.body.variables.keyid,
+      context.body.variables.privateKey
+    );
+
+    return Promise.resolve({
+      token: tokenInfo.token,
+      media: tokenMedia.token,
+      code: "200"
+    });
+  } catch (error) {
+    throw new ApolloError(error);
+  }
+};
+
+export const verifyFacebookToken = async (token: string, context: any) => {
+  try {
+    let {
+      country = " ",
+      region = "",
+      city = "",
+      timezone = "",
+      ll = []
+    } = context.ipInfo;
+
+    let fields = {
+      fields: "id,name,email,about,last_name,languages,permissions{permission}"
+    };
+    return new Promise(async (resolve, reject) => {
+      graph.get("/me?access_token=" + token, fields, async function(
+        err: any,
+        payload: any
+      ) {
+        if (err) {
+          reject(err);
+        }
+        try {
+          let userId = await userModel.findOneOrCreate(payload.email, {
+            username: payload.name,
+            location: {
+              city,
+              country,
+              ll,
+              region,
+              timezone
+            },
+            external_service: "facebook"
+          });
+
+          let tokenInfo = new Jwt({ userId: userId._id.toString() });
+          let tokenMedia = new JwtMedia({ userId: userId._id.toString() });
+
+          await tokenMedia.create_token("21d");
+
+          await tokenInfo.create_token(
+            "21d",
+            context.body.variables.keyid,
+            context.body.variables.privateKey
+          );
+          resolve({
+            token: tokenInfo.token,
+            media: tokenMedia.token,
+            code: "200"
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  } catch (error) {
+    console.log(error);
     throw new ApolloError(error);
   }
 };

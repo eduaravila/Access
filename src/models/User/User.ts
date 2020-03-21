@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bc from "bcrypt";
 import moment from "moment";
-import { UserModelStaticsType, UserModelType } from "./types";
+import { UserModelStaticsType, UserModelType, thirdPartyUser } from "./types";
 
 const User_schema: Schema = new mongoose.Schema({
   username: {
@@ -15,7 +15,12 @@ const User_schema: Schema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: false
+  },
+  external_service: {
+    type: String,
+    enum: ["google", "local", "facebook"],
+    default: "local"
   },
   created_at: {
     type: String,
@@ -38,6 +43,7 @@ const User_schema: Schema = new mongoose.Schema({
     // required: true
   },
   location: {
+    required: false,
     country: {
       type: String
     },
@@ -87,6 +93,31 @@ User_schema.statics.check_email_availability = async function(email: string) {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+User_schema.statics.findOneOrCreate = async function(
+  email: string,
+  { username, location, external_service }: thirdPartyUser
+) {
+  try {
+    let find_email = await this.findOne({
+      $or: [{ username: email }, { email: email }]
+    });
+    if (!find_email) {
+      let new_user = await new this({
+        username,
+        email,
+        location,
+        external_service
+      });
+      await new_user.save();
+
+      return Promise.resolve(new_user);
+    }
+    return Promise.resolve(find_email);
   } catch (error) {
     return Promise.reject(error);
   }

@@ -9,7 +9,9 @@ import {
   restorePasswordCompareCode,
   login,
   deletePreUser,
-  imageToken
+  imageToken,
+  verifyGoogleToken,
+  verifyFacebookToken
 } from "../controllers/User";
 import {
   SuccessResponse,
@@ -143,5 +145,23 @@ export class RegisterResolver {
     @Ctx() ctx: any
   ) {
     return await login(accessInfo, ctx);
+  }
+
+  @Query(returns => AccessInfo)
+  async LoginGoogle(
+    @Arg("token", () => String)
+    token: string,
+    @Ctx() ctx: any
+  ) {
+    return await verifyGoogleToken(token, ctx);
+  }
+
+  @Query(returns => AccessInfo)
+  async LoginFacebook(
+    @Arg("token", () => String)
+    token: string,
+    @Ctx() ctx: any
+  ) {
+    return await verifyFacebookToken(token, ctx);
   }
 }
