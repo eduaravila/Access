@@ -20,6 +20,11 @@ import JwtMedia from "../utils/jwtMedia";
 import { verification_email, password_reset_mail } from "../utils/mailer";
 import pre_user_model from "../models/User/PreUser";
 
+enum servicesEnum {
+  Google = "google",
+  Local = "local",
+  Facebook = "facebook"
+}
 export const register = async (
   { username, password, email }: registerType,
   context: any
@@ -134,7 +139,7 @@ export const login = async ({ user, password }: loginType, { body }: any) => {
 
     let userId = await userModel.findOne({
       $or: [{ username: user }, { email: user }],
-      $and: [{ external_service: "local" }]
+      $and: [{ external_service: servicesEnum.Local }]
     });
 
     let token = new Jwt({ userId: userId._id.toString() });
@@ -273,7 +278,7 @@ export const restorePasswordCode = async (email: string, { body }: any) => {
     let code = random("0", 6);
     let user = await userModel.findOne({
       $or: [{ username: email }, { email: email }],
-      $and: [{ external_service: "local" }]
+      $and: [{ external_service: servicesEnum.Local }]
     });
 
     console.log(user, code);
