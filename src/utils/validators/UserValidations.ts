@@ -9,16 +9,24 @@ import {
 import preUserModel from "../../models/User/PreUser";
 import UserModel from "../../models/User/User";
 
+import { ApolloError } from "apollo-server-express";
+
 @ValidatorConstraint({ async: true })
 export class EmailIsAvailableConstraint
   implements ValidatorConstraintInterface {
-  validate(email: any, args: ValidationArguments) {
-    return preUserModel
-      .check_email_availability(email)
-      .then(e => e)
-      .catch(e => {
-        throw e;
-      });
+  async validate(email: any, args: ValidationArguments) {
+    try {
+      let user = await UserModel.check_email_availability(email);
+      console.log(user);
+
+      if (!user) {
+        return Promise.reject(false);
+      }
+      await preUserModel.check_email_availability(email);
+      return Promise.resolve(true);
+    } catch (error) {
+      throw new ApolloError(error);
+    }
   }
 }
 

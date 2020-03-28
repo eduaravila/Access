@@ -19,7 +19,6 @@ import Jwt from "../utils/jwt";
 import JwtMedia from "../utils/jwtMedia";
 import { verification_email, password_reset_mail } from "../utils/mailer";
 import pre_user_model from "../models/User/PreUser";
-import { async } from "q";
 
 export const register = async (
   { username, password, email }: registerType,
@@ -272,8 +271,12 @@ export const verifyFacebookToken = async (token: string, context: any) => {
 export const restorePasswordCode = async (email: string, { body }: any) => {
   try {
     let code = random("0", 6);
-    let user = await userModel.findOne({ email });
-    console.log(body);
+    let user = await userModel.findOne({
+      $or: [{ username: email }, { email: email }],
+      $and: [{ external_service: "local" }]
+    });
+
+    console.log(user, code);
 
     if (!user) {
       throw new Error("AUTORIZATION ERROR");
@@ -287,7 +290,7 @@ export const restorePasswordCode = async (email: string, { body }: any) => {
       body.variables.privateKey
     );
 
-    await password_reset_mail(email, username, code);
+    await password_reset_mail(user.email, username, code);
 
     return Promise.resolve(token.token);
   } catch (error) {

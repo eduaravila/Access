@@ -111,7 +111,6 @@ export class resendCodeInfo {
 @InputType()
 export class restorePasswordCodeInput {
   @Field(type => String)
-  @IsEmail()
   @UserIsRegistered({
     message: "$value username | email is not still registered 👎"
   })
