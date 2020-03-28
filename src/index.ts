@@ -80,7 +80,8 @@ if (cluster.isWorker) {
         formatError: err => {
           return err;
         },
-        playground: true
+        // playground: true,
+        // introspection:true
       });
       // The GraphQL endpoint
 
