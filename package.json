@@ -7,7 +7,7 @@
     "build-ts": "tsc",
     "postinstall": "npm run build-ts",
     "test": "jest --setupFiles dotenv/config --forceExit --detectOpenHandles",
-    "prestart": "copyfiles ecolote.com.priv ./dist/src/utils/certificates",
+    "prestart": "copyfiles ecolote.com.priv ./dist/src/utils/certificates && copyfiles ./src/assets/images/* ./dist/src/assets/images",
     "dev": "concurrently -k \"tsc --watch\" \"nodemon -r dotenv/config ./dist/src/index.js dotenv_config_path=./.env.dev\"",
     "start": "node ./dist/src/index.js"
   },
